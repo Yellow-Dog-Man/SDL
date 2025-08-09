@@ -28,6 +28,8 @@
 #include "../../events/SDL_events_c.h"
 #include "../../events/SDL_clipboardevents_c.h"
 
+#include <shellapi.h>
+
 #ifdef UNICODE
 #define TEXT_FORMAT CF_UNICODETEXT
 #else
@@ -37,6 +39,9 @@
 #define IMAGE_FORMAT CF_DIB
 #define IMAGE_MIME_TYPE "image/bmp"
 #define BFT_BITMAP 0x4d42 // 'BM'
+
+#define URI_FORMAT CF_HDROP
+#define URI_MIME_TYPE "text/uri-list"
 
 // Assume we can directly read and write BMP fields without byte swapping
 SDL_COMPILE_TIME_ASSERT(verify_byte_order, SDL_BYTEORDER == SDL_LIL_ENDIAN);
@@ -160,6 +165,62 @@ static void *WIN_ConvertDIBtoBMP(HANDLE hMem, size_t *size)
         SDL_SetError("Invalid BMP data");
     }
     return bmp;
+}
+
+static char *WIN_ConvertHDropToUriList(HANDLE hDrop) {
+    char *text = NULL;
+    const char* file_header = "file:///";
+    const UINT file_header_len = 8;
+    const char* end_footer = "\r\n";
+    const UINT end_footer_len = 2;
+
+    HDROP drop = (HDROP)GlobalLock(hDrop);
+    if (drop) {
+        UINT file_count = DragQueryFileA(drop, 0xFFFFFFFF, NULL, 0);
+
+        if(file_count == 0) {
+            // FIXME: returns unfreeable ptr
+            text = "";
+            return text;
+        }
+
+        UINT buf_len = 1;
+
+        for (UINT i = 0; i < file_count; i++) {
+            buf_len += DragQueryFileA(drop, i, NULL, 0) + file_header_len + end_footer_len;
+        }
+
+        text = SDL_malloc(buf_len);
+
+        UINT buf_off = 0;
+
+        // Assemble a URL of the format "file:///%s\r\n"
+        // TODO: sprintf is probably better here
+        for (UINT i = 0; i < file_count; i++) {
+            SDL_memcpy(text + buf_off, file_header, file_header_len);
+            buf_off += file_header_len;
+
+            buf_off += DragQueryFileA(drop, i, text + buf_off, buf_len - buf_off);
+            SDL_memcpy(text + buf_off, end_footer, end_footer_len);
+            buf_off += end_footer_len;
+        }
+
+        // Convert backslashes in Windows paths to spec-compliant forward slashes.
+        // TODO: Proper URI formatting instead of this hack
+        for (size_t i = 0; i < buf_len; i++)
+        {
+            if(text[i] == '\\')
+                text[i] = '/';
+        }
+
+        text[buf_off] = '\0';
+
+        GlobalUnlock(hDrop);
+    } else {
+        WIN_SetError("Couldn't lock clipboard data");
+    }
+
+    return text;
 }
 
 static bool WIN_SetClipboardImage(SDL_VideoDevice *_this)
@@ -288,7 +349,20 @@ void *WIN_GetClipboardData(SDL_VideoDevice *_this, const char *mime_type, size_t
     if (SDL_IsTextMimeType(mime_type)) {
         char *text = NULL;
 
-        if (IsClipboardFormatAvailable(TEXT_FORMAT)) {
+        if(SDL_strcmp(mime_type, URI_MIME_TYPE) == 0 && IsClipboardFormatAvailable(URI_FORMAT)) {
+            if (WIN_OpenClipboard(_this)) {
+                HANDLE hDrop;
+
+                hDrop = GetClipboardData(URI_FORMAT);
+                if (hDrop) {
+                    text = WIN_ConvertHDropToUriList(hDrop);
+                } else {
+                    WIN_SetError("Couldn't get clipboard data");
+                }
+                WIN_CloseClipboard();
+            }
+        }
+        else if (IsClipboardFormatAvailable(TEXT_FORMAT)) {
             if (WIN_OpenClipboard(_this)) {
                 HANDLE hMem;
                 LPTSTR tstr;
@@ -337,6 +411,11 @@ void *WIN_GetClipboardData(SDL_VideoDevice *_this, const char *mime_type, size_t
 bool WIN_HasClipboardData(SDL_VideoDevice *_this, const char *mime_type)
 {
     if (SDL_IsTextMimeType(mime_type)) {
+        // For URI mime type we want to override text behavior.
+        if (SDL_strcmp(mime_type, URI_MIME_TYPE) == 0) {
+            return IsClipboardFormatAvailable(URI_FORMAT);
+        }
+
         if (IsClipboardFormatAvailable(TEXT_FORMAT)) {
             return true;
         }
@@ -361,6 +440,7 @@ static int GetClipboardFormatMimeType(UINT format, char *name)
     } mime_types[] = {
         { TEXT_FORMAT, "text/plain;charset=utf-8" },
         { IMAGE_FORMAT, IMAGE_MIME_TYPE },
+        { URI_FORMAT, URI_MIME_TYPE },
     };
 
     for (int i = 0; i < SDL_arraysize(mime_types); ++i) {
