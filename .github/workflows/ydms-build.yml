@@ -1,4 +1,5 @@
 name: YDMS Build
+run-name: YDMS Build and NuGet publish.
 
 on:
   push
