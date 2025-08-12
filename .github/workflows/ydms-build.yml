@@ -6,3 +6,5 @@ on:
 jobs:
   cmake-build:
     uses: Yellow-Dog-Man/composite-actions-templates/.github/workflows/cmake-build.yml@main
+    with:
+      artifact_name: sdl-ydms
