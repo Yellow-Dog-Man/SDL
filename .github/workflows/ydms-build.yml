@@ -29,10 +29,12 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: 'Install NuGet CLI'
+      - name: 'Install Mono and NuGet CLI'
         run: |
+          set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y nuget
+          sudo apt-get install -y mono-devel
+          curl -sSL https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -o nuget.exe
 
       - name: 'Detect version from source artifact names'
         id: ver
@@ -87,7 +89,7 @@ jobs:
 
       - name: 'Pack NuGet package'
         run: |
-          nuget pack package/SDL.ReleaseArtifacts.nuspec -NoDefaultExcludes -OutputDirectory out
+          mono nuget.exe pack package/SDL.ReleaseArtifacts.nuspec -NoDefaultExcludes -OutputDirectory out
           echo "Produced packages:"
           ls -al out
 
