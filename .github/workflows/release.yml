@@ -10,7 +10,7 @@ on:
       complex:
         description: 'Run complex build'
         required: false
-        default: true
+        default: false
   release:
     types:
       - published
@@ -119,8 +119,8 @@ jobs:
           path: /tmp/build/*.so
 
   dmg:
-    needs: [src]
     if: ${{ inputs.complex }} == 'true'
+    needs: [src]
     runs-on: macos-latest
     outputs:
       dmg: ${{ steps.releaser.outputs.dmg }}
@@ -437,8 +437,8 @@ jobs:
           cmake --build build_arm64ec --config Release --verbose
 
   mingw:
-    needs: [src]
     if: ${{ inputs.complex }} == 'true'
+    needs: [src]
     runs-on: ubuntu-24.04  # FIXME: current ubuntu-latest ships an outdated mingw, replace with ubuntu-latest once 24.04 becomes the new default
     outputs:
       mingw-devel-tar-gz: ${{ steps.releaser.outputs.mingw-devel-tar-gz }}
@@ -483,8 +483,8 @@ jobs:
           path: '${{ github.workspace }}/dist'
 
   mingw-verify:
-    needs: [mingw, src]
     if: ${{ inputs.complex }} == 'true'
+    needs: [mingw, src]
     runs-on: ubuntu-latest
     steps:
       - name: 'Install Mingw toolchain'
@@ -541,8 +541,8 @@ jobs:
           cmake --build build_x64 --config Release --verbose
 
   android:
-    needs: [src]
     if: ${{ inputs.complex }} == 'true'
+    needs: [src]
     runs-on: ubuntu-latest
     outputs:
       android-aar: ${{ steps.releaser.outputs.android-aar }}
@@ -599,8 +599,8 @@ jobs:
           path: '${{ github.workspace }}/dist'
 
   android-verify:
-    needs: [android, src]
     if: ${{ inputs.complex }} == 'true'
+    needs: [android, src]
     runs-on: ubuntu-latest
     steps:
       - name: 'Set up Python'
