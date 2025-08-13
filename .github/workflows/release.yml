@@ -7,6 +7,10 @@ on:
       commit:
         description: 'Commit of SDL'
         required: false
+      complex:
+        description: 'Run complex build'
+        required: false
+        default: true
   release:
     types:
       - published
@@ -108,9 +112,15 @@ jobs:
           cmake -S ${{ steps.tar.outputs.path }} -B /tmp/build -DSDL_TEST_LIBRARY=TRUE -DSDL_TESTS=TRUE -DSDL_EXAMPLES=TRUE
           cmake --build /tmp/build --verbose
           ctest --test-dir /tmp/build --no-tests=error --output-on-failure
+      - name: 'Package files'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: /tmp/build/*.so
 
   dmg:
     needs: [src]
+    if: ${{ inputs.complex }} == 'true'
     runs-on: macos-latest
     outputs:
       dmg: ${{ steps.releaser.outputs.dmg }}
@@ -151,6 +161,7 @@ jobs:
           path: '${{ github.workspace }}/dist'
 
   dmg-verify:
+    if: ${{ inputs.complex }} == 'true'
     needs: [dmg, src]
     runs-on: macos-latest
     steps:
@@ -427,6 +438,7 @@ jobs:
 
   mingw:
     needs: [src]
+    if: ${{ inputs.complex }} == 'true'
     runs-on: ubuntu-24.04  # FIXME: current ubuntu-latest ships an outdated mingw, replace with ubuntu-latest once 24.04 becomes the new default
     outputs:
       mingw-devel-tar-gz: ${{ steps.releaser.outputs.mingw-devel-tar-gz }}
@@ -472,6 +484,7 @@ jobs:
 
   mingw-verify:
     needs: [mingw, src]
+    if: ${{ inputs.complex }} == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: 'Install Mingw toolchain'
@@ -529,6 +542,7 @@ jobs:
 
   android:
     needs: [src]
+    if: ${{ inputs.complex }} == 'true'
     runs-on: ubuntu-latest
     outputs:
       android-aar: ${{ steps.releaser.outputs.android-aar }}
@@ -586,6 +600,7 @@ jobs:
 
   android-verify:
     needs: [android, src]
+    if: ${{ inputs.complex }} == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: 'Set up Python'

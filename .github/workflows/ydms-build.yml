@@ -22,6 +22,7 @@ jobs:
           mkdir -p artifacts
           gh run download ${{ github.event.workflow_run.id }} -R ${{ github.repository }} -D artifacts
           echo 'Downloaded artifacts:'
+          rm android dmg sources -r
           ls -R artifacts || true
 
       - name: 'Set up .NET SDK'
