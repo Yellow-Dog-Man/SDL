@@ -22,7 +22,14 @@ jobs:
           mkdir -p artifacts
           gh run download ${{ github.event.workflow_run.id }} -R ${{ github.repository }} -D artifacts
           echo 'Downloaded artifacts:'
-          rm android dmg sources -r
+          cd artifacts
+          rm android dmg mingw win32/*arm* win32/*VC* win32/*x86* -r
+          cd win32
+          unzip *.zip
+          rm *.md *.txt *.zip
+          cd ..
+          mv sources ..
+          cd ..
           ls -R artifacts || true
 
       - name: 'Set up .NET SDK'
@@ -43,8 +50,8 @@ jobs:
         run: |
           set -euo pipefail
           version=""
-          if compgen -G "artifacts/sources/*" > /dev/null; then
-            version=$(ls artifacts/sources/* 2>/dev/null | grep -Eo '[0-9]+(\.[0-9]+){1,3}([.-][A-Za-z0-9]+(\.[A-Za-z0-9]+)*)?' | head -n1 || true)
+          if compgen -G "sources/*" > /dev/null; then
+            version=$(ls sources/* 2>/dev/null | grep -Eo '[0-9]+(.[0-9]+){1,3}(-[A-Za-z0-9]+(.[A-Za-z0-9]+)*)?' | head -n1 || true)
           fi
           if [ -z "$version" ]; then
             version="0.0.0-ci.${{ github.event.workflow_run.run_number }}"
