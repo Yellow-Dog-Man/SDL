@@ -79,8 +79,8 @@ jobs:
             <metadata>
               <id>${{ env.PACKAGE_ID }}</id>
               <version>${{ steps.ver.outputs.version }}</version>
-              <authors>Yellow Dog Man Studios & SDL Contributors</authors>
-              <owners>Yellow Dog Man Studios</owners>
+              <authors>Yellow-Dog-Man</authors>
+              <owners>Yellow-Dog-Man</owners>
               <license type="expression">Zlib</license>
               <projectUrl>https://github.com/${{ github.repository }}</projectUrl>
               <repository type="git" url="https://github.com/${{ github.repository }}.git"/>
