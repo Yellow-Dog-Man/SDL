@@ -14,7 +14,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
-      PACKAGE_ID: SDL3.ReleaseArtifacts
+      PACKAGE_ID: YellowDogMan.SDL
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: 'Download artifacts from triggering run'
@@ -79,8 +79,8 @@ jobs:
             <metadata>
               <id>${{ env.PACKAGE_ID }}</id>
               <version>${{ steps.ver.outputs.version }}</version>
-              <authors>SDL</authors>
-              <owners>SDL</owners>
+              <authors>Yellow Dog Man Studios & SDL Contributors</authors>
+              <owners>Yellow Dog Man Studios</owners>
               <license type="expression">Zlib</license>
               <projectUrl>https://github.com/${{ github.repository }}</projectUrl>
               <repository type="git" url="https://github.com/${{ github.repository }}.git"/>
