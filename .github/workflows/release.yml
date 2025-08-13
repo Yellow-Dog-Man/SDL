@@ -6,7 +6,8 @@ on:
     inputs:
       commit:
         description: 'Commit of SDL'
-        required: true
+        required: false
+        default: github.sha
   release:
     types:
       - published
