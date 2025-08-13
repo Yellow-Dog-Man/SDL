@@ -7,7 +7,6 @@ on:
       commit:
         description: 'Commit of SDL'
         required: false
-        default: github.sha
   release:
     types:
       - published
@@ -23,6 +22,13 @@ jobs:
       src-tar-xz: ${{ steps.releaser.outputs.src-tar-xz }}
       src-zip: ${{ steps.releaser.outputs.src-zip }}
     steps:
+      - name: Define commit SHA
+        run: |
+          if ${{ inputs.commit == '' }}; then
+            echo "commitsha=${{ github.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "commitsha=${{ inputs.commit }}" >> "$GITHUB_ENV"
+          fi
       - name: 'Set up Python'
         uses: actions/setup-python@v5
         with:
@@ -42,7 +48,7 @@ jobs:
         run: |
           python build-scripts/build-release.py \
             --actions source \
-            --commit ${{ inputs.commit }} \
+            --commit ${{ env.commitsha }} \
             --root "${{ github.workspace }}/SDL" \
             --github \
             --debug
