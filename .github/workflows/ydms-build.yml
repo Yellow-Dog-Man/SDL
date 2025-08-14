@@ -65,6 +65,7 @@ jobs:
 
       - name: 'Build archives'
         run: |
+          mkdir dist
           python build-scripts/build-release.py `
             --actions msvc `
             --commit ${{ github.sha }} `
