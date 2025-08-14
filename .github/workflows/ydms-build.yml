@@ -1,108 +1,53 @@
-name: 'ydms-build'
+name: YDMS Release Builds
 
 on:
-  workflow_run:
-    workflows: ['release']
-    types: [completed]
-
-permissions:
-  contents: read
-  actions: read
+  release:
+    types:
+      - published
+  push:
 
 jobs:
-  package-and-push:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    env:
-      PACKAGE_ID: YellowDogMan.SDL
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build-linux:
+    strategy:
+      matrix:
+        osver: [ubuntu-latest, ubuntu-24.04-arm]
+
+    runs-on: ${{ matrix.osver }}
+
     steps:
-      - name: 'Download artifacts from triggering run'
-        run: |
-          mkdir -p artifacts
-          gh run download ${{ github.event.workflow_run.id }} -R ${{ github.repository }} -D artifacts
-          echo 'Downloaded artifacts:'
-          cd artifacts
-          rm android dmg mingw win32/*arm* win32/*VC* win32/*x86* -r
-          cd win32
-          unzip *.zip
-          rm *.md *.txt *.zip
-          cd ..
-          mv sources ..
-          cd ..
-          ls -R artifacts || true
+      - uses: actions/checkout@v4
 
-      - name: 'Set up .NET SDK'
-        uses: actions/setup-dotnet@v4
+      - name: Set dist name
+        run: |
+          if ${{ matrix.osver == 'ubuntu-24.04-arm' }}; then
+            echo "distname=crunch-linux-arm" >> "$GITHUB_ENV"
+          else
+            echo "distname=crunch-linux" >> "$GITHUB_ENV"
+          fi
+
+      - name: Create build dirs
+        run: |
+          mkdir build
+          cd build
+          echo "builddir=$(pwd)" >> "$GITHUB_ENV"
+
+      - name: 'Install Linux dependencies'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            gnome-desktop-testing libasound2-dev libpulse-dev libaudio-dev libjack-dev libsndio-dev \
+            libusb-1.0-0-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev \
+            libxss-dev libwayland-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+            libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev fcitx-libs-dev
+
+      - name: Build SDL
+        working-directory: ${{ env.builddir }}
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j4
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          dotnet-version: '9.0.x'
-
-      - name: 'Install Mono and NuGet CLI'
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y mono-devel
-          curl -sSL https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -o nuget.exe
-
-      - name: 'Detect version from source artifact names'
-        id: ver
-        shell: bash
-        run: |
-          set -euo pipefail
-          version=""
-          if compgen -G "sources/*" > /dev/null; then
-            version=$(ls sources/* 2>/dev/null | grep -Eo '[0-9]+(.[0-9]+){1,3}(-[A-Za-z0-9]+(.[A-Za-z0-9]+)*)?' | head -n1 || true)
-          fi
-          if [ -z "$version" ]; then
-            version="0.0.0-ci.${{ github.event.workflow_run.run_number }}"
-          fi
-          echo "Resolved NuGet version: $version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: 'Create package layout'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p package/content
-
-          if [ -d artifacts ]; then
-            cp -R artifacts/* package/content/ || true
-          fi
-
-          cat > package/README.md << 'README_EOF'
-          SDL YDMS Release Artifacts
-          README_EOF
-
-          cat > package/SDL.ReleaseArtifacts.nuspec << NUSPEC_EOF
-          <?xml version="1.0"?>
-          <package>
-            <metadata>
-              <id>${{ env.PACKAGE_ID }}</id>
-              <version>${{ steps.ver.outputs.version }}</version>
-              <authors>Yellow-Dog-Man</authors>
-              <owners>Yellow-Dog-Man</owners>
-              <license type="expression">Zlib</license>
-              <projectUrl>https://github.com/${{ github.repository }}</projectUrl>
-              <repository type="git" url="https://github.com/${{ github.repository }}.git"/>
-              <description>Bundled release artifacts from the SDL CI release workflow (sources, prebuilt binaries, and SDKs).</description>
-              <requireLicenseAcceptance>false</requireLicenseAcceptance>
-              <readme>README.md</readme>
-            </metadata>
-            <files>
-              <file src="README.md" target="" />
-              <file src="content/**" target="content" />
-            </files>
-          </package>
-          NUSPEC_EOF
-
-      - name: 'Pack NuGet package'
-        run: |
-          mono nuget.exe pack package/SDL.ReleaseArtifacts.nuspec -NoDefaultExcludes -OutputDirectory out
-          echo "Produced packages:"
-          ls -al out
-
-      - name: 'Push to nuget.org'
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: |
-          dotnet nuget push out/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_TOKEN }}" --skip-duplicate
+          name: ${{ env.distname }}
+          path: ${{ env.builddir }}/**/*.so
