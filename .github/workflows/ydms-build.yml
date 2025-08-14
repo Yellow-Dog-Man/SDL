@@ -67,7 +67,7 @@ jobs:
         run: |
           python build-scripts/build-release.py `
             --actions msvc `
-            --commit ${{ github.sha }}`
+            --commit ${{ github.sha }} `
             --root "${{ github.workspace }}/dist" `
             --github `
             --debug
