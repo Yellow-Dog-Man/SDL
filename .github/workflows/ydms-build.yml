@@ -57,24 +57,17 @@ jobs:
 
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+        uses: ssrobins/install-cmake@v1
 
       - uses: actions/checkout@v4
 
       - name: 'Build archives'
         run: |
-          mkdir dist
-          python build-scripts/build-release.py `
-            --actions msvc `
-            --commit ${{ github.sha }} `
-            --root "${{ github.workspace }}/dist" `
-            --github `
-            --debug
+          cmake -B build -S .
+          cmake --build build --config Release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: '${{ github.workspace }}/dist'
+          path: 'build/**/*.dll'
