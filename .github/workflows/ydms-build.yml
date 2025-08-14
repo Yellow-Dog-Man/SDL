@@ -51,3 +51,29 @@ jobs:
         with:
           name: ${{ env.distname }}
           path: ${{ env.builddir }}/**/*.so
+
+  build-win:
+    runs-on: windows-2025
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/checkout@v4
+
+      - name: 'Build archives'
+        run: |
+          python build-scripts/build-release.py `
+            --actions msvc `
+            --commit ${{ github.sha }}`
+            --root "${{ github.workspace }}/dist" `
+            --github `
+            --debug
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: '${{ github.workspace }}/dist'
