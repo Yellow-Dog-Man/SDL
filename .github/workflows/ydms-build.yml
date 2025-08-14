@@ -56,9 +56,6 @@ jobs:
     runs-on: windows-2025
 
     steps:
-      - name: Setup Python
-        uses: ssrobins/install-cmake@v1
-
       - uses: actions/checkout@v4
 
       - name: 'Build archives'
