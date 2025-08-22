@@ -8,21 +8,29 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - osver: ubuntu-latest
+            image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+          - osver: ubuntu-24.04-arm
+            image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk/arm64
+
+
+    runs-on: ${{ matrix.osver }}
     container:
-      image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+      image: ${{ matrix.image }}
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set dist name
         run: |
-          echo "distname=sdl-linux" >> "$GITHUB_ENV"
-#          if ${{ matrix.osver == 'ubuntu-24.04-arm' }}; then
-#            echo "distname=sdl-linux-arm" >> "$GITHUB_ENV"
-#          else
-#            echo "distname=sdl-linux" >> "$GITHUB_ENV"
-#          fi
+          if ${{ matrix.osver == 'ubuntu-24.04-arm' }}; then
+            echo "distname=sdl-linux-arm" >> "$GITHUB_ENV"
+          else
+            echo "distname=sdl-linux" >> "$GITHUB_ENV"
+          fi
 
       - name: Create build dirs
         run: |
