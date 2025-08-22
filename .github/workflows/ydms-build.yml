@@ -17,12 +17,12 @@ jobs:
 
       - name: Set dist name
         run: |
+          echo "distname=sdl-linux" >> "$GITHUB_ENV"
 #          if ${{ matrix.osver == 'ubuntu-24.04-arm' }}; then
 #            echo "distname=sdl-linux-arm" >> "$GITHUB_ENV"
 #          else
 #            echo "distname=sdl-linux" >> "$GITHUB_ENV"
 #          fi
-          echo "distname=sdl-linux" >> "$GITHUB_ENV"
 
       - name: Create build dirs
         run: |
