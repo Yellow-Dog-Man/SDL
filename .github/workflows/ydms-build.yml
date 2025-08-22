@@ -8,22 +8,21 @@ on:
 
 jobs:
   build-linux:
-    strategy:
-      matrix:
-        osver: [ubuntu-latest, ubuntu-24.04-arm]
-
-    runs-on: ${{ matrix.osver }}
+    runs-on: ubuntu-latest
+    container:
+      image: steamruntime/steamrt:sdk-amd64
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set dist name
         run: |
-          if ${{ matrix.osver == 'ubuntu-24.04-arm' }}; then
-            echo "distname=crunch-linux-arm" >> "$GITHUB_ENV"
-          else
-            echo "distname=crunch-linux" >> "$GITHUB_ENV"
-          fi
+#          if ${{ matrix.osver == 'ubuntu-24.04-arm' }}; then
+#            echo "distname=sdl-linux-arm" >> "$GITHUB_ENV"
+#          else
+#            echo "distname=sdl-linux" >> "$GITHUB_ENV"
+#          fi
+          echo "distname=sdl-linux" >> "$GITHUB_ENV"
 
       - name: Create build dirs
         run: |
