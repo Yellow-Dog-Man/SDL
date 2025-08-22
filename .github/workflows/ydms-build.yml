@@ -10,7 +10,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     container:
-      image: steamruntime/steamrt:sdk-amd64
+      image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk
 
     steps:
       - uses: actions/checkout@v4
